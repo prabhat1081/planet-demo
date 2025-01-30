@@ -11,3 +11,8 @@ lxml
 networkx
 obonet==0.2.5
 goatools==1.0.15
+google-api-python-client 
+google-auth-httplib2 
+google-auth-oauthlib
+gcsfs
+st-files-connection

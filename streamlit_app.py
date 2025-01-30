@@ -1,8 +1,41 @@
 import streamlit as st
 import json
 from typing import Dict, Any, List
+import os
 
-from parse_trial import parse
+from parse_trial import parse, load_tools
+import requests
+import zipfile
+import io
+import os
+import pandas as pd
+import subprocess
+import hashlib 
+
+from st_files_connection import FilesConnection
+
+
+# Create connection object and retrieve file contents.
+# Specify input format is a csv and to cache the result for 600 seconds.
+gcs_conn = st.connection('gcs', type=FilesConnection)
+
+
+def generate_filename_from_dict(data):
+    """Generates a unique filename based on the hash of a dictionary."""
+
+    # Convert the dictionary to a JSON string
+    json_data = json.dumps(data, sort_keys=True).encode('utf-8')
+
+    # Create a hash object
+    hash_object = hashlib.sha256(json_data)
+
+    # Get the hexadecimal representation of the hash
+    hex_dig = hash_object.hexdigest()
+
+    # Return a filename based on the hash
+    return f"file_{hex_dig[:10]}.json"
+
+parser_state = None
 
 def fetch_trial_details(nct_id: str) -> Dict[str, Any]:
     """
@@ -290,14 +323,21 @@ def main():
             
             # Success message
             st.success("Trial data saved successfully!")
+
+            filename = generate_filename_from_dict(trial_data)
+
+            with gcs_conn.open(f'planet-stanford/{filename}', 'w') as f:
+                json.dump(trial_data, f)
             
             # Download button
-            st.download_button(
-                label="Download Trial Data",
-                data=json.dumps(trial_data, indent=2).encode('utf-8'),
-                file_name=f"{trial_nct_id}_trial_data.json",
-                mime="application/json"
-            )
+            # st.download_button(
+            #     label="Download Trial Data",
+            #     data=json.dumps(trial_data, indent=2).encode('utf-8'),
+            #     file_name=f"{trial_nct_id}_trial_data.json",
+            #     mime="application/json"
+            # )
+
+
 
 if __name__ == "__main__":
     main()

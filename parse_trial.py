@@ -27,7 +27,7 @@ from knowledge_graph.kg import UnionFind
 from knowledge_graph.build_graph import TrialGraphBuilder
 from knowledge_graph.node_features import TrialAttributeFeatures
 
-DATA_DIR = "data"
+DATA_DIR = "parsing_data/parsing_package/data"
 
 
 def get_clinical_trial_data(nctid):
@@ -381,7 +381,7 @@ def load_cuid2term():
     return cuid2term
 
 
-def parse_trial(nct_id):
+def load_tools():
     drug_matcher = DrugMatcher(data_paths={
         'drug_data': f'{DATA_DIR}/drug_data/drugs_all_03_04_21.pkl',
         'pubchem_synonyms': f'{DATA_DIR}/drug_data/pubchem-drugbankid-synonyms.json',
@@ -392,6 +392,12 @@ def parse_trial(nct_id):
     umls_utils = UMLSUtils(f'{DATA_DIR}/population_data/umls-install/2020AB')
     umls_utils.load_relations()
     cuid2term = load_cuid2term()
+
+    return drug_matcher, disease_matcher, umls_utils, cuid2term
+
+
+def parse_trial(nct_id, state):
+    drug_matcher, disease_matcher, umls_utils, cuid2term = state
 
     trial = parse(nct_id)
     trial = run_medex_and_parse_output(trial)
@@ -415,4 +421,6 @@ if __name__ == '__main__':
     parser.add_argument('nctid', type=str, help='NCT ID of the clinical trial', default='NCT02370680')
     args = parser.parse_args()
 
-    print(parse_trial(args.nctid))
+    state = load_tools()
+
+    print(parse_trial(args.nctid, state))
