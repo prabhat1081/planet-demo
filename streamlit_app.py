@@ -96,7 +96,7 @@ def main():
             
             phase = st.multiselect(
                 "Phase",
-                options=["PHASE1", "PHASE2", "PHASE3", "PHASE4"],
+                options=["PHASE1", "PHASE2", "PHASE3", "PHASE4", "NA"],
                 default=data.get('phase', [])
             )
         
