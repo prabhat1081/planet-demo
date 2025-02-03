@@ -3,6 +3,11 @@
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
   "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
   "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "8", // Specify Java 8
+      "installMaven": false,  // Optional: Install Maven if you need it
+      "installGradle": false // Optional: Install Gradle if you need it
+    },
     "ghcr.io/devcontainers/features/docker-in-docker:latest": {} // Include Docker-in-Docker feature
   },
   "customizations": {
