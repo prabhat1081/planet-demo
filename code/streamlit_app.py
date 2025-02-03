@@ -27,55 +27,51 @@ from email.mime.text import MIMEText
 import base64
 import json
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from google.cloud import storage  # For GCS interaction
 
 # Initialize Secret Manager client
 client = secretmanager.SecretManagerServiceClient()
+storage_client = storage.Client()
 
 def access_secret_version(secret_name):
     """Access the payload for the given secret version."""
 
-    name = f"projects/[PROJECT_ID]/secrets/{secret_name}/versions/latest" # Replace with your project ID
+    name = f"projects/premium-state-449406-n8/secrets/{secret_name}/versions/latest" # Replace with your project ID
     response = client.access_secret_version(name=name)
     return response.payload.data.decode("UTF-8")
 
-@st.cache_resource  # Cache the Gmail service object
-def build_gmail_service():
-    try:
-        # credentials_json = access_secret_version("gmail-credentials")  # Get from Secret Manager
-        # credentials = service_account.Credentials.from_service_account_info(
-        #     info=json.loads(credentials_json), scopes=['https://www.googleapis.com/auth/gmail.send']
-        # )
-        SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-        creds = default_credentials(scopes=SCOPES)
-        service = build('gmail', 'v1')  # Build the service
-
-        return service  # Return the service object
-
-    except Exception as e:
-        st.error(f"Error initializing Gmail service: {e}")
-        return None  # Return None if initialization fails
-
-gmail_service = build_gmail_service()  # Initialize the service (cached)
-
 def send_email(recipient: str, subject: str, body: str):
-    if gmail_service is None:  # Check if service initialization was successful
-        st.error("Gmail service is not available. Please check the logs.")
-        return
-
     try:
-        message = MIMEText(body)
-        message['to'] = recipient
-        message['from'] = 'prabwal1008@gmail.com'  # Your email address
-        message['subject'] = subject
-        raw_message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
-
-        gmail_service.users().messages().send(userId='me', body=raw_message).execute()
-
-        st.success(f"Email sent to {recipient}!")
-        return True
+        sendgrid_api_key = access_secret_version("sendgrid-api-key") # Get from Secret Manager
+        message = Mail(
+            from_email='prabhat.agarwal@cs.stanford.edu',  # Your verified SendGrid sender
+            to_emails=recipient,
+            subject=subject,
+            plain_text_content=body
+        )
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        if response.status_code == 202:
+            st.success(f"Email sent to {recipient}!")
+        else: 
+            st.error(f"Error sending email: {response.body.decode('utf-8')}")
     except Exception as e:
         st.error(f"Error sending email: {e}")
-        return False
+
+def get_trial_data(request_id):
+    """Retrieves trial data from GCS given a request ID."""
+    bucket_name = "planet-stanford"  # Your GCS bucket name
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(f"{request_id}.json")
+
+    try:
+        data = json.loads(blob.download_as_bytes())
+        return data
+    except Exception as e:
+        st.error(f"Error retrieving data for Request ID {request_id}: {e}")
+        return None
 
 def send_confirmation_email(recipient, request_id):  # Added request_id parameter
     # smtp_username = access_secret_version("smtp-username")
