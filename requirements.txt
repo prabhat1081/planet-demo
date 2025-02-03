@@ -19,3 +19,5 @@ st-files-connection
 streamlit
 google-cloud-storage
 python-dotenv
+google-cloud-secret-manager
+sendgrid

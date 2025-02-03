@@ -11,8 +11,104 @@ import os
 import pandas as pd
 import subprocess
 import hashlib 
+import re
 
 from st_files_connection import FilesConnection
+
+import smtplib
+import os
+from google.cloud import secretmanager
+import uuid  # For generating request IDs
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+
+from email.mime.text import MIMEText
+import base64
+import json
+
+
+# Initialize Secret Manager client
+client = secretmanager.SecretManagerServiceClient()
+
+def access_secret_version(secret_name):
+    """Access the payload for the given secret version."""
+
+    name = f"projects/[PROJECT_ID]/secrets/{secret_name}/versions/latest" # Replace with your project ID
+    response = client.access_secret_version(name=name)
+    return response.payload.data.decode("UTF-8")
+
+@st.cache_resource  # Cache the Gmail service object
+def build_gmail_service():
+    try:
+        # credentials_json = access_secret_version("gmail-credentials")  # Get from Secret Manager
+        # credentials = service_account.Credentials.from_service_account_info(
+        #     info=json.loads(credentials_json), scopes=['https://www.googleapis.com/auth/gmail.send']
+        # )
+        SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+        creds = default_credentials(scopes=SCOPES)
+        service = build('gmail', 'v1')  # Build the service
+
+        return service  # Return the service object
+
+    except Exception as e:
+        st.error(f"Error initializing Gmail service: {e}")
+        return None  # Return None if initialization fails
+
+gmail_service = build_gmail_service()  # Initialize the service (cached)
+
+def send_email(recipient: str, subject: str, body: str):
+    if gmail_service is None:  # Check if service initialization was successful
+        st.error("Gmail service is not available. Please check the logs.")
+        return
+
+    try:
+        message = MIMEText(body)
+        message['to'] = recipient
+        message['from'] = 'prabwal1008@gmail.com'  # Your email address
+        message['subject'] = subject
+        raw_message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
+
+        gmail_service.users().messages().send(userId='me', body=raw_message).execute()
+
+        st.success(f"Email sent to {recipient}!")
+        return True
+    except Exception as e:
+        st.error(f"Error sending email: {e}")
+        return False
+
+def send_confirmation_email(recipient, request_id):  # Added request_id parameter
+    # smtp_username = access_secret_version("smtp-username")
+    # smtp_password = access_secret_version("smtp-password")
+    # server = smtplib.SMTP('smtp.gmail.com', 587)  # Or your SMTP server
+    # server.starttls()
+    # server.login(smtp_username, smtp_password)
+    email_subject = f"Subject: Planet - Request Confirmation (Request ID: {request_id})"
+    email_body = f"""
+    Dear Valued User,
+
+    Thank you for using Planet.
+
+    This email confirms that we have received your request. Your Request ID is: {request_id}. Please refer to this ID if you need to contact us about your request.
+
+    Our team is now processing your data, and we anticipate having your results ready within 36-48 hours.
+
+    You will receive a follow-up email with a link to our website where you can view your results.
+
+    If you have any questions in the meantime, please don't hesitate to contact us at [Support Email Address or Link to Contact Form].
+
+    Sincerely,
+
+    The Planet Team
+    """  # Using a multiline string for the email body
+
+    #     server.sendmail(smtp_username, recipient, email_body)
+    #     server.quit()
+    #     st.success(f"Email sent to {recipient}!")
+    # except Exception as e:
+    #     st.error(f"Error sending email: {e}")
+
+    return send_email(recipient, email_subject, email_body)
 
 
 # Create connection object and retrieve file contents.
@@ -70,6 +166,12 @@ def fetch_trial_details(nct_id: str) -> Dict[str, Any]:
         'maximum_age': None
     }
     return parse(nctid=nct_id)
+
+def is_valid_email(email):
+    """Validates if the given string is a valid email address."""
+    # Basic email validation regex (can be improved for stricter validation)
+    email_regex = r"[^@]+@[^@]+\.[^@]+"  
+    return re.match(email_regex, email) is not None
 
 def main():
     st.title("Clinical Trial Data Editor")
@@ -296,48 +398,44 @@ def main():
             height=200,
             placeholder="Inclusion Criteria:\n\n* Criterion 1\n* Criterion 2\n\nExclusion Criteria:\n\n* Criterion 1\n* Criterion 2"
         )
-        
-        # Submit button
-        if st.form_submit_button("Save Trial Data"):
-            # Compile all data
-            trial_data = {
-                'nct_id': trial_nct_id,
-                'phase': phase,
-                'gender_sex': gender,
-                'minimum_age': min_age,
-                'maximum_age': max_age,
-                'enrollment': {
-                    'count': enrollment,
-                    'type': 'ESTIMATED'
-                },
-                'condition': [x.strip() for x in conditions.splitlines() if x.strip()],
-                'arm_group': arm_groups,
-                'intervention': interventions,
-                'primary_outcome': primary_outcomes,
-                'secondary_outcome': secondary_outcomes,
-                'eligibility_criteria': eligibility
-            }
-            
-            # Store in session state
-            st.session_state.trial_data = trial_data
-            
-            # Success message
-            st.success("Trial data saved successfully!")
 
-            filename = generate_filename_from_dict(trial_data)
+        recipient_email = st.text_input("Recipient Email", placeholder="Enter your email address")
 
-            with gcs_conn.open(f'planet-stanford/{filename}', 'w') as f:
-                json.dump(trial_data, f)
-            
-            # Download button
-            # st.download_button(
-            #     label="Download Trial Data",
-            #     data=json.dumps(trial_data, indent=2).encode('utf-8'),
-            #     file_name=f"{trial_nct_id}_trial_data.json",
-            #     mime="application/json"
-            # )
+        if st.form_submit_button("Save Trial Data and Send Email"):  # Submit button is OUTSIDE the email check
+            if not recipient_email:
+                st.warning("Please enter a recipient email address.")
+            elif not is_valid_email(recipient_email):
+                st.error("Invalid email address. Please enter a valid email.")
+            else:  # Proceed only if the email is valid
+                # Compile all data
+                trial_data = {
+                    'nct_id': trial_nct_id,
+                    'phase': phase,
+                    'gender_sex': gender,
+                    'minimum_age': min_age,
+                    'maximum_age': max_age,
+                    'enrollment': {
+                        'count': enrollment,
+                        'type': 'ESTIMATED'
+                    },
+                    'condition': [x.strip() for x in conditions.splitlines() if x.strip()],
+                    'arm_group': arm_groups,
+                    'intervention': interventions,
+                    'primary_outcome': primary_outcomes,
+                    'secondary_outcome': secondary_outcomes,
+                    'eligibility_criteria': eligibility
+                }
+                
+                # Store in session state
+                st.session_state.trial_data = trial_data
 
+                request_id = str(uuid.uuid4())
 
+                with gcs_conn.open(f'planet-stanford/{request_id}.json', 'w') as f:
+                    json.dump(trial_data, f)
+
+                if send_confirmation_email(recipient_email, request_id):
+                    st.success(f"Trial data saved successfully! Your Request ID is: {request_id}. Please keep this for your records.")  # Success message only here
 
 if __name__ == "__main__":
     main()

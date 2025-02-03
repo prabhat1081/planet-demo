@@ -1,0 +1,26 @@
+.git
+__pycache__
+*.pyc
+*.log
+temp/*
+node_modules
+.DS_Store
+Dockerfile  # You usually don't need to include the Dockerfile itself
+.dockerignore # but sometimes it can be helpful to include it.
+
+google-cloud-sdk/
+google-cloud-sdk.staging/
+*.tar.gz
+.env
+__pycache__/
+*.pyc
+*.tar.gz
+
+.git
+__pycache__
+*.pyc
+node_modules
+.devcontainer
+.github
+*.tag.gz
+google-cloud-sdk/

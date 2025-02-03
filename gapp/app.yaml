@@ -1,6 +1,6 @@
 runtime: custom
 env: flex
-image: gcr.io/my-project/my-app:latest
+image: gcr.io/premium-state-449406-n8/planet-demo:v1
 
 service: default
 

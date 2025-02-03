@@ -1,0 +1,8 @@
+.git
+__pycache__
+*.pyc
+node_modules
+.devcontainer
+.github
+*.tag.gz
+google-cloud-sdk/

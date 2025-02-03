@@ -176,3 +176,4 @@ google-cloud-sdk.staging/
 .env
 __pycache__/
 *.pyc
+*.tar.gzsendgrid.env
