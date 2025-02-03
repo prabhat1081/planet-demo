@@ -46,11 +46,14 @@ def send_email(recipient: str, subject: str, body: str):
     try:
         sendgrid_api_key = access_secret_version("sendgrid-api-key") # Get from Secret Manager
         message = Mail(
-            from_email='prabhat.agarwal@cs.stanford.edu',  # Your verified SendGrid sender
+            from_email='planet.stanford@gmail.com',  # Your verified SendGrid sender
             to_emails=recipient,
             subject=subject,
             plain_text_content=body
         )
+        message.cc_emails = [
+            'planet.stanford@gmail.com',  # Add sender to CC if needed
+        ]
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
         if response.status_code == 202:
@@ -79,23 +82,23 @@ def send_confirmation_email(recipient, request_id):  # Added request_id paramete
     # server = smtplib.SMTP('smtp.gmail.com', 587)  # Or your SMTP server
     # server.starttls()
     # server.login(smtp_username, smtp_password)
-    email_subject = f"Subject: Planet - Request Confirmation (Request ID: {request_id})"
+    email_subject = f"Subject: PlaNet - Request Confirmation (Request ID: {request_id})"
     email_body = f"""
-    Dear Valued User,
+Dear Valued User,
 
-    Thank you for using Planet.
+Thank you for using PlaNet.
 
-    This email confirms that we have received your request. Your Request ID is: {request_id}. Please refer to this ID if you need to contact us about your request.
+This email confirms that we have received your request. Your Request ID is: {request_id}. Please refer to this ID if you need to contact us about your request.
 
-    Our team is now processing your data, and we anticipate having your results ready within 36-48 hours.
+Our team is now processing your data, and we anticipate having your results ready within 36-48 hours.
 
-    You will receive a follow-up email with a link to our website where you can view your results.
+You will receive a follow-up email with a link to our website where you can view your results.
 
-    If you have any questions in the meantime, please don't hesitate to contact us at [Support Email Address or Link to Contact Form].
+If you have any questions in the meantime, please don't hesitate to contact us at planet.stanford@gmail.com.
 
-    Sincerely,
+Sincerely,
 
-    The Planet Team
+The PlaNet Team
     """  # Using a multiline string for the email body
 
     #     server.sendmail(smtp_username, recipient, email_body)
