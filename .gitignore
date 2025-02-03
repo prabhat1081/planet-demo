@@ -169,3 +169,10 @@ parsing_data/
 parsing_package.zip
 
 .streamlit/
+
+google-cloud-sdk/
+google-cloud-sdk.staging/
+*.tar.gz
+.env
+__pycache__/
+*.pyc
