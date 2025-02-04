@@ -22,4 +22,4 @@ RUN pip3 install -r requirements.txt
 ADD code/ /app
 
 # Set the entrypoint to run Streamlit
-ENTRYPOINT ["streamlit", "run", "streamlit_app.py", "--server.port", "8080"]
+ENTRYPOINT ["streamlit", "run", "1_Run PlaNet.py", "--server.port", "8080"]
