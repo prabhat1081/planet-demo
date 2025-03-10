@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y wget unzip virtualenv
+
+# Download and extract data, then clean up
+RUN wget https://snap.stanford.edu/planet/parsing_package.zip \
+    && unzip parsing_package.zip -d parsing_data \
+    && rm parsing_package.zip \
+    && rm -rf parsing_data/parsing_package/data_parsers \
+    && rm -rf parsing_data/parsing_package/tmp/ \
+    && rm -rf parsing_data/parsing_package/knowledge_graph \
+    && rm -rf parsing_data/parsing_package/preprocessing/
+
+# Install virtualenv and create a virtual environment
+RUN virtualenv /env -p python3.11
+
+# Activate virtual environment
+ENV VIRTUAL_ENV=/env
+ENV PATH=/env/bin:$PATH
+
+# Install dependencies from requirements_server.txt
+ADD requirements_server.txt /app/
+RUN pip3 install --no-cache-dir -r requirements_server.txt
+
+# Add application code
+ADD code/ /app/code/
+
+# set the correct working directory to the code folder
+WORKDIR /app/code/
+
+# Define the command to run your application (adjust as needed)
+# Example:
+# CMD ["python", "your_main_script.py"]
+
+# Example when using uvicorn and fastAPI
+#CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -206,7 +206,7 @@ def validate_trial_data(trial_data):
     return True
 
 def main():
-    st.title("Run PlaNet on your clinical trial")
+    st.title("Run PlaNet on your Clinical Trial")
 
     # Information Box at the Top
     st.markdown(
@@ -229,7 +229,7 @@ def main():
         unsafe_allow_html=True,
     )
 
-    st.header("Import Trial Data using ClinicalTrials.gov identifier (NCT ID) [Optional]")
+    st.header("Import trial data using clinicalTrials.gov identifier (NCT ID) [Optional]")
     
     st.markdown(
         """
@@ -269,7 +269,7 @@ def main():
                 st.error(f"Error fetching trial details: {str(e)}")
     
     # Section for Manual Data Entry or Editing Imported Data
-    st.header("Enter or Edit Trial Details")
+    st.header("Enter or edit trial details")
     st.markdown(
         """
         You can manually enter trial details or edit the data imported from ClinicalTrials.gov. 

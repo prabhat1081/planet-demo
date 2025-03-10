@@ -24,3 +24,7 @@ node_modules
 .github
 *.tag.gz
 google-cloud-sdk/
+
+temp_data.zip
+parsing_data/
+parsing_package.zip

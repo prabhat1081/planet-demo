@@ -28,13 +28,19 @@ from knowledge_graph.kg import UnionFind
 from knowledge_graph.build_graph import TrialGraphBuilder
 from knowledge_graph.node_features import TrialAttributeFeatures
 
-DATA_DIR = "parsing_data/parsing_package/data"
+DATA_DIR = "/data/parsing_package/data"
+BASE_DIR = "/data/parsing_package"
 
+def set_data_dir(path):
+    DATA_DIR = f"{path}/parsing_package/data"
+
+def set_base_dir(path):
+    BASE_DIR = f"/{path}/parsing_package"
 
 def run_medex_and_parse_output(parsed_trial):
     result = {}
 
-    classpath = 'resources/medex/Medex_UIMA_1.3.8/bin:resources/medex/Medex_UIMA_1.3.8/lib/*'
+    classpath = f'{BASE_DIR}/resources/medex/Medex_UIMA_1.3.8/bin:resources/medex/Medex_UIMA_1.3.8/lib/*'
     args_template = "java -Xmx1024m -cp {0} org.apache.medex.Main -i {1} -o {2} -b n -f y -d y -t n"
 
     with tempfile.TemporaryDirectory() as basedir:
@@ -65,7 +71,7 @@ def run_medex_and_parse_output(parsed_trial):
 
 
 def parse_eligiility_criteria(parsed_trial):
-    args_template = "java -Xmx4096m -jar resources/criteria2query.jar  --input {0} --outputDir {1}"
+    args_template = f"java -Xmx4096m -jar /{BASE_DIR}/resources/criteria2query.jar  --input {0} --outputDir {1}"
 
     with tempfile.TemporaryDirectory() as basedir:
         # create input
