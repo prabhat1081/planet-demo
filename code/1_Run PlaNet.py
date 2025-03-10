@@ -1,9 +1,12 @@
 import streamlit as st
+ # Set page configuration to wide layout
+st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
+
 import json
 from typing import Dict, Any, List
 import os
 
-from parse_trial import parse, load_tools
+from parse import parse
 import requests
 import zipfile
 import io
@@ -28,11 +31,10 @@ import base64
 import json
 
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, Cc, Email
 from google.cloud import storage  # For GCS interaction
 
- # Set page configuration to wide layout
-st.set_page_config(layout="wide")
+
 
 try:
     # Initialize Secret Manager client
@@ -48,17 +50,21 @@ def access_secret_version(secret_name):
     response = client.access_secret_version(name=name)
     return response.payload.data.decode("UTF-8")
 
+SENDER_EMAIL = 'prabhat.agarwal@cs.stanford.edu'
+
 def send_email(recipient: str, subject: str, body: str):
     try:
         sendgrid_api_key = access_secret_version("sendgrid-api-key") # Get from Secret Manager
         message = Mail(
-            from_email='planet.stanford@gmail.com',  # Your verified SendGrid sender
+            from_email=Email(email=SENDER_EMAIL, name='PlaNet Team'),  # Your verified SendGrid sender
             to_emails=recipient,
             subject=subject,
             html_content=body
         )
-        message.cc_emails = [
-            'planet.stanford@gmail.com',  # Add sender to CC if needed
+        message.cc = [
+            Cc('mbrbic@epfl.ch', 'Maria Brbic'),
+            Cc('myasu@cs.stanford.edu', 'Michi Yasunaga'),
+            Cc('prabhat.agarwal@cs.stanford.edu', 'Prabhat Agarwal')
         ]
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
@@ -91,13 +97,13 @@ def send_confirmation_email(recipient, request_id):  # Add task parameter
 
     <p>This email confirms that we have received your request. Your Request ID is: {request_id}.</p>
 
-    <p>You can view your request details here: <a href="https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}">https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}</a></p>
+    <p>You can view your request details here: <a href="https://tinyurl.com/planet-stanford/lookup?id={request_id}">https://tinyurl.com/planet-stanford/lookup?id={request_id}</a></p>
 
     <p>Our team is now processing your data, and we anticipate having your results ready within 72 hours.</p>
 
     <p>You will receive a follow-up email with a link to our website where you can view your results.</p>
 
-    <p>If you have any questions, please don't hesitate to contact us at <a href="mailto:planet.stanford@gmail.com">planet.stanford@gmail.com</a>.</p>
+    <p>If you have any questions, please don't hesitate to contact us at <a href="mailto:{SENDER_EMAIL}">{SENDER_EMAIL}</a>.</p>
 
     <p>Sincerely,</p>
 
@@ -208,12 +214,15 @@ def main():
         <div style="background-color: #f0f8ff; padding: 20px; border-radius: 5px;">
             <h3>About PlaNet</h3>
             <p>
-                PlaNet is a tool designed to analyze and process clinical trial data. 
-                It helps researchers and clinicians gain insights from trial information.
+                PlaNet is a tool that predicts the efficacy and side effects of drugs for specific populations using a clinical knowledge graph. 
+                By leveraging a vast network of biomedical knowledge, PlaNet can provide insights into how different drugs might affect various patient groups.
             </p>
             <p>
-                Learn more about PlaNet and our research: 
-                <a href="YOUR_PUBLICATION_LINK" target="_blank">View our publication here</a>.
+                This app allows you to upload clinical trial details and receive predictions on the potential outcomes, including efficacy and safety, for your target population.
+            </p>
+            <p>
+                Learn more about the research behind PlaNet: 
+                <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank">View our publication here</a>.
             </p>
         </div>
         """,
