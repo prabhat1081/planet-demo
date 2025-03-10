@@ -518,8 +518,13 @@ def main():
             else:
                 request_id = str(uuid.uuid4())
 
+                data = {
+                    "trial_data": st.session_state.trial_data,
+                    "email": recipient_email
+                }
+
                 with gcs_conn.open(f'planet-stanford/{request_id}.json', 'w') as f:
-                    json.dump(st.session_state.trial_data, f)
+                    json.dump(data, f)
 
                 if send_confirmation_email(recipient_email, request_id):
                     st.success(

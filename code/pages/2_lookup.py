@@ -13,7 +13,7 @@ def get_trial_data(request_id):
     blob = bucket.blob(f"{request_id}.json")
 
     try:
-        data = json.loads(blob.download_as_bytes())
+        data = json.loads(blob.download_as_bytes())['trial_data']
         return data
     except Exception as e:
         st.error(f"Error retrieving data for Request ID {request_id}: {e}")
