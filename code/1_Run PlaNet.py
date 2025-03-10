@@ -31,9 +31,15 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from google.cloud import storage  # For GCS interaction
 
-# Initialize Secret Manager client
-client = secretmanager.SecretManagerServiceClient()
-storage_client = storage.Client()
+ # Set page configuration to wide layout
+st.set_page_config(layout="wide")
+
+try:
+    # Initialize Secret Manager client
+    client = secretmanager.SecretManagerServiceClient()
+    storage_client = storage.Client()
+except:
+    st.info("Secret agent not available")
 
 def access_secret_version(secret_name):
     """Access the payload for the given secret version."""
@@ -49,7 +55,7 @@ def send_email(recipient: str, subject: str, body: str):
             from_email='planet.stanford@gmail.com',  # Your verified SendGrid sender
             to_emails=recipient,
             subject=subject,
-            plain_text_content=body
+            html_content=body
         )
         message.cc_emails = [
             'planet.stanford@gmail.com',  # Add sender to CC if needed
@@ -57,7 +63,7 @@ def send_email(recipient: str, subject: str, body: str):
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
         if response.status_code == 202:
-            st.success(f"Email sent to {recipient}!")
+            st.success(f"Confirmation email sent to {recipient}. Please check your inbox!")
         else: 
             st.error(f"Error sending email: {response.body.decode('utf-8')}")
     except Exception as e:
@@ -76,37 +82,28 @@ def get_trial_data(request_id):
         st.error(f"Error retrieving data for Request ID {request_id}: {e}")
         return None
 
-def send_confirmation_email(recipient, request_id):  # Added request_id parameter
-    # smtp_username = access_secret_version("smtp-username")
-    # smtp_password = access_secret_version("smtp-password")
-    # server = smtplib.SMTP('smtp.gmail.com', 587)  # Or your SMTP server
-    # server.starttls()
-    # server.login(smtp_username, smtp_password)
+def send_confirmation_email(recipient, request_id):  # Add task parameter
     email_subject = f"Subject: PlaNet - Request Confirmation (Request ID: {request_id})"
     email_body = f"""
-Dear Valued User,
+    <p>Dear Valued User,</p> 
 
-Thank you for using PlaNet.
+    <p>Thank you for using PlaNet!</p>
 
-This email confirms that we have received your request. Your Request ID is: {request_id}. Please refer to this ID if you need to contact us about your request.
+    <p>This email confirms that we have received your request. Your Request ID is: {request_id}.</p>
 
-Our team is now processing your data, and we anticipate having your results ready within 36-48 hours.
+    <p>You can view your request details here: <a href="https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}">https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}</a></p>
 
-You will receive a follow-up email with a link to our website where you can view your results.
+    <p>Our team is now processing your data, and we anticipate having your results ready within 72 hours.</p>
 
-If you have any questions in the meantime, please don't hesitate to contact us at planet.stanford@gmail.com.
+    <p>You will receive a follow-up email with a link to our website where you can view your results.</p>
 
-Sincerely,
+    <p>If you have any questions, please don't hesitate to contact us at <a href="mailto:planet.stanford@gmail.com">planet.stanford@gmail.com</a>.</p>
 
-The PlaNet Team
-    """  # Using a multiline string for the email body
+    <p>Sincerely,</p>
 
-    #     server.sendmail(smtp_username, recipient, email_body)
-    #     server.quit()
-    #     st.success(f"Email sent to {recipient}!")
-    # except Exception as e:
-    #     st.error(f"Error sending email: {e}")
-
+    <p>The PlaNet Team</p>
+    """
+    #     <p>In the meantime, you can learn more about PlaNet and our research on our <a href="YOUR_WEBSITE_LINK">website</a>.</p>
     return send_email(recipient, email_subject, email_body)
 
 
@@ -172,37 +169,106 @@ def is_valid_email(email):
     email_regex = r"[^@]+@[^@]+\.[^@]+"  
     return re.match(email_regex, email) is not None
 
+
+def validate_trial_data(trial_data):
+    """
+    Validates the trial data to ensure it meets the following criteria:
+    1. There should be at least one arm with a drug intervention.
+    """
+
+    return True
+
+    has_drug_intervention = False
+    for arm in trial_data.get('arm_group',):
+        for intervention_name in arm.get('interventionNames',):
+            for intervention in trial_data.get('intervention',):
+                if intervention_name == intervention.get('intervention_name') and \
+                   intervention.get('intervention_type') == 'Drug':
+                    has_drug_intervention = True
+                    break
+            if has_drug_intervention:
+                break
+        if has_drug_intervention:
+            break
+
+    if not has_drug_intervention:
+        st.error("Error: There must be at least one arm with a drug intervention.")
+        return False
+
+    # Add more validation checks here if needed
+
+    return True
+
 def main():
-    st.title("Clinical Trial Data Editor")
+    st.title("Run PlaNet on your clinical trial")
+
+    # Information Box at the Top
+    st.markdown(
+        """
+        <div style="background-color: #f0f8ff; padding: 20px; border-radius: 5px;">
+            <h3>About PlaNet</h3>
+            <p>
+                PlaNet is a tool designed to analyze and process clinical trial data. 
+                It helps researchers and clinicians gain insights from trial information.
+            </p>
+            <p>
+                Learn more about PlaNet and our research: 
+                <a href="YOUR_PUBLICATION_LINK" target="_blank">View our publication here</a>.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     
-    # Top section for NCT ID fetch
-    st.header("Auto-fill from NCT ID (Optional)")
+    st.markdown(
+        """
+        If you have a ClinicalTrials.gov identifier (NCT ID), you can import trial data directly. 
+        This will pre-fill the form below. You can then review and edit the imported data before running PlaNet. 
+        If you don't have an NCT ID or prefer to enter data manually, you can skip this step.
+        """
+    )
+
+    # Example NCT ID Buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Example 1 (NCT01586975)"):  # Replace with your actual NCT ID
+            st.session_state.nct_id = "NCT01586975"
+    with col2:
+        if st.button("Example 2 (NCT05828836)"):  # Replace with another NCT ID
+            st.session_state.nct_id = "NCT05828836"
+
     col1, col2 = st.columns([3, 1])
     with col1:
         nct_id = st.text_input(
-            "NCT ID",
-            placeholder="Enter NCT ID (e.g., NCT01007279)",
-            key="nct_id_input"
+            "Enter NCT ID",
+            placeholder="e.g., NCT01586975",
+            key="nct_id_input",
+            value=st.session_state.get('nct_id', '')
         )
     with col2:
-        fetch_button = st.button("Fetch Trial Details", use_container_width=True)
-    
+        fetch_button = st.button("Import Trial Details", use_container_width=True)
+
     if fetch_button and nct_id:
         with st.spinner("Fetching trial details..."):
             try:
                 trial_data = fetch_trial_details(nct_id)
                 st.session_state.trial_data = trial_data
-                st.success("Trial details fetched successfully!")
+                st.success("Trial details fetched successfully! You can now review and edit the data below.")
             except Exception as e:
                 st.error(f"Error fetching trial details: {str(e)}")
     
-    # Main form for all fields
-    st.header("Trial Details")
-    st.info("Fill in the fields manually or fetch from NCT ID above")
+    # Section for Manual Data Entry or Editing Imported Data
+    st.header("Enter or Edit Trial Details")
+    st.markdown(
+        """
+        You can manually enter trial details or edit the data imported from ClinicalTrials.gov. 
+        Please fill in the following fields.
+        """
+    )
     
     with st.form("trial_form"):
         # Use fetched data if available, otherwise empty/default values
-        data = st.session_state.get('trial_data', fetch_trial_details('NCT02376244'))
+        data = st.session_state.get('trial_data', fetch_trial_details('NCT01586975'))
         
         # Basic Information
         st.subheader("Basic Information")
@@ -365,12 +431,13 @@ def main():
         
         with col2:
             st.markdown("**Secondary Outcomes**")
-            num_secondary = st.number_input("Number of Secondary Outcomes", min_value=1,
-                                          value=len(data.get('secondary_outcome', [1])))
+            data_secondary_outcomes = data.get('secondary_outcome') or []
+            num_secondary = st.number_input("Number of Secondary Outcomes", min_value=0,  # Changed to 0
+                                      value=len(data_secondary_outcomes))  # Also adjust initial value
             
             secondary_outcomes = []
             for i in range(int(num_secondary)):
-                existing_outcome = data.get('secondary_outcome', [])[i] if i < len(data.get('secondary_outcome', [])) else {}
+                existing_outcome = data_secondary_outcomes[i] if i < len(data_secondary_outcomes) else {}
                 
                 measure = st.text_input(
                     "Measure",
@@ -398,43 +465,60 @@ def main():
             placeholder="Inclusion Criteria:\n\n* Criterion 1\n* Criterion 2\n\nExclusion Criteria:\n\n* Criterion 1\n* Criterion 2"
         )
 
+        confirm_button = st.form_submit_button("Comfirm Trial Details")
+
+    # Confirmation Step with Validation
+    if confirm_button:
+        # Compile all data
+        trial_data = {
+            'nct_id': trial_nct_id,
+            'phase': phase,
+            'gender_sex': gender,
+            'minimum_age': min_age,
+            'maximum_age': max_age,
+            'enrollment': {
+                'count': enrollment,
+                'type': 'ESTIMATED'
+            },
+            'condition': [x.strip() for x in conditions.splitlines() if x.strip()],
+            'arm_group': arm_groups,
+            'intervention': interventions,
+            'primary_outcome': primary_outcomes,
+            'secondary_outcome': secondary_outcomes,
+            'eligibility_criteria': eligibility
+        }
+
+        if validate_trial_data(trial_data):  # Perform validation here
+            st.session_state.confirmed = True
+            st.session_state.trial_data = trial_data  # Store validated data
+            st.success("Trial details confirmed! Please enter your email and run PlaNet.")
+        else:
+            st.session_state.confirmed = False 
+
+    # Email Input and Run PlaNet Button
+    if st.session_state.get('confirmed', False):
         recipient_email = st.text_input("Recipient Email", placeholder="Enter your email address")
 
-        if st.form_submit_button("Save Trial Data and Send Email"):  # Submit button is OUTSIDE the email check
+        if st.button("Run PlaNet"):
             if not recipient_email:
                 st.warning("Please enter a recipient email address.")
             elif not is_valid_email(recipient_email):
                 st.error("Invalid email address. Please enter a valid email.")
-            else:  # Proceed only if the email is valid
-                # Compile all data
-                trial_data = {
-                    'nct_id': trial_nct_id,
-                    'phase': phase,
-                    'gender_sex': gender,
-                    'minimum_age': min_age,
-                    'maximum_age': max_age,
-                    'enrollment': {
-                        'count': enrollment,
-                        'type': 'ESTIMATED'
-                    },
-                    'condition': [x.strip() for x in conditions.splitlines() if x.strip()],
-                    'arm_group': arm_groups,
-                    'intervention': interventions,
-                    'primary_outcome': primary_outcomes,
-                    'secondary_outcome': secondary_outcomes,
-                    'eligibility_criteria': eligibility
-                }
-                
-                # Store in session state
-                st.session_state.trial_data = trial_data
-
+            else:
                 request_id = str(uuid.uuid4())
 
                 with gcs_conn.open(f'planet-stanford/{request_id}.json', 'w') as f:
-                    json.dump(trial_data, f)
+                    json.dump(st.session_state.trial_data, f)
 
                 if send_confirmation_email(recipient_email, request_id):
-                    st.success(f"Trial data saved successfully! Your Request ID is: {request_id}. Please keep this for your records.")  # Success message only here
-
+                    st.success(
+                        f"""
+                        Request saved successfully! Your Request ID is: {request_id}. Please keep this for your records. 
+                        You can view your request at https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}. 
+                        You should get an email with the results link in 72 hours.
+                        """
+                    )
+                    
 if __name__ == "__main__":
+   
     main()

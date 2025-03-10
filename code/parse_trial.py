@@ -89,6 +89,9 @@ def parse(nctid: str):
             val = val[component]
         parsed_trial[attribute] = val
 
+    if parsed_trial['arm_group'] is None:
+        raise ValueError("The trial must have atleast 1 arm.")
+
     for arm_group in parsed_trial['arm_group']:
         arm_group['arm_group_label'] = arm_group.pop('label')
 
