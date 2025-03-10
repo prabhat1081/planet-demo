@@ -228,6 +228,8 @@ def main():
         """,
         unsafe_allow_html=True,
     )
+
+    st.header("Import Trial Data using ClinicalTrials.gov identifier (NCT ID) [Optional]")
     
     st.markdown(
         """
