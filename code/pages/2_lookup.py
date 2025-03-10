@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
 import json
 from google.cloud import storage
 from app.common import layout_trial_data
@@ -13,8 +14,8 @@ def get_trial_data(request_id):
     blob = bucket.blob(f"{request_id}.json")
 
     try:
-        data = json.loads(blob.download_as_bytes())['trial_data']
-        return data
+        data = json.loads(blob.download_as_bytes())
+        return data.get('trial_data', data)
     except Exception as e:
         st.error(f"Error retrieving data for Request ID {request_id}: {e}")
         return None

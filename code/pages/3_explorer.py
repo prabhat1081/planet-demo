@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
 import json
 from google.cloud import storage
 
@@ -108,7 +109,7 @@ def main():
         if st.session_state.get("show_details", None): #Check if the details should be shown
             trial_data = download_request(st.session_state["show_details"]) #If they should be shown, download and display
             if trial_data:
-                layout_trial_data(trial_data['trial_data'])
+                layout_trial_data(trial_data.get('trial_data', trial_data))
 
         # Download All button
         if st.button("Download All Requests"):
