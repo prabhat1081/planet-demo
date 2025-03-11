@@ -7,8 +7,47 @@ import json
 from google.cloud import storage  # For GCS interaction
 from app.common import layout_trial_data
 
+from app.common import send_email, SENDER_EMAIL
+
 # Initialize GCS client
 storage_client = storage.Client()
+
+
+def send_results_available_email(recipient: str, request_id: str) -> bool:
+    """
+    Sends an email to the recipient notifying them that their results are available.
+
+    Args:
+        recipient (str): The email address of the recipient.
+        request_id (str): The ID of the request.
+        results_link (str): The URL where the results can be accessed.
+
+    Returns:
+        bool: True if the email was sent successfully, False otherwise.
+    """
+    results_link = f'https://go.epfl.ch/planet-stanford/result?id={request_id}'
+
+    email_subject = f"Subject: PlaNet - Results Available (Request ID: {request_id})"
+    email_body = f"""
+    <p>Dear Valued User,</p>
+
+    <p>Your PlaNet results are now available for Request ID: {request_id}.</p>
+
+    <p>You can access your results here: <a href="{results_link}">{results_link}</a></p>
+
+    <p>Please review your results at your convenience.</p>
+
+    <p>If you have any questions, please don't hesitate to contact us at <a href="mailto:{SENDER_EMAIL}">{SENDER_EMAIL}</a>.</p>
+
+    <p>Sincerely,</p>
+
+    <p>The PlaNet Team</p>
+    """
+    return send_email(recipient, email_subject, email_body)
+
+# Example usage (assuming send_email is defined elsewhere and SENDER_EMAIL is a global variable):
+# send_results_available_email("user@example.com", "request123")
+
 
 
 def list_requests(filter_status=None, search_id=None):
@@ -29,9 +68,18 @@ def list_requests(filter_status=None, search_id=None):
                 continue  # Skip if filter doesn't match
 
             if search_id and search_id.lower() not in request_id.lower(): #Case insensitive search
-                continue #Skip if search doesn't match
+                continue # Skip if search doesn't match
+            request = download_request(request_id)
 
-            requests.append({"id": request_id, "results_exist": results_exist})
+            if request is None:
+                continue
+
+            email = request.get('email', 'NA')
+
+            email_sent = request.get('results_emailed', False)
+
+            requests.append({"id": request_id, "results_exist": results_exist, "email": email, 
+                             'results_emailed': email_sent, 'request_timestamp': request.get('timestamp', 'NA')})
     return requests
 
 
@@ -47,6 +95,31 @@ def download_request(request_id):
     except Exception as e:
         st.error(f"Error downloading request {request_id}: {e}")
         return None
+    
+def update_email_sent_status(request_id: str, email_sent:bool=True):
+    """
+    Updates the email sent status for a specific request in the JSON data stored in GCS.
+
+    Args:
+        request_id (str): The ID of the request.
+        email_sent (bool, optional): The new email sent status (True or False). Defaults to True.
+
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
+    bucket_name = "planet-stanford"
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(f"{request_id}.json")
+
+    try:
+        data = json.loads(blob.download_as_bytes())
+        data["results_emailed"] = email_sent  # Update the email_sent field
+        blob.upload_from_string(json.dumps(data), content_type="application/json")  # Upload the updated JSON
+        return True
+    except Exception as e:
+        st.error(f"Error updating email sent status for request {request_id}: {e}")
+        return False
 
 def upload_results(request_id, results_data):
     """Uploads results data for a specific request."""
@@ -68,6 +141,54 @@ def download_all_requests(request_ids): #Callback function
             all_data[request_id] = data
     json_data = json.dumps(all_data, indent=4)
     return json_data
+
+import streamlit as st
+import datetime
+import time  # For Unix timestamp handling
+
+# Assuming send_results_available_email and update_email_sent_status are defined elsewhere
+
+def format_timestamp(timestamp_str: str):
+    """Formats a timestamp string into a readable format."""
+    try:
+        dt_obj = datetime.datetime.fromisoformat(timestamp_str)  # ISO format
+        return dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        try:
+            dt_obj = datetime.datetime.fromtimestamp(int(timestamp_str))  # Unix timestamp
+            return dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return "Invalid Timestamp"
+
+def display_request_row(request):
+    """Displays a single request row in the Streamlit table."""
+    col1, col2, col3, col4, col5, col6 = st.columns([2, 1, 1, 1, 1, 1])
+
+    with col1:
+        st.write(request["id"])
+    with col2:
+        st.write(request["email"])
+    with col3:
+        st.write(format_timestamp(request["request_timestamp"]))
+    with col4:
+        st.link_button(
+            url=f"/result?id={request['id']}",
+            label="View Results",
+            icon=":material/analytics:",
+            disabled=not request["results_exist"],
+        )
+    with col5:
+        if st.button(
+            f"Send Results Email",
+            disabled=not request["results_exist"] or request.get("results_emailed", False),
+            key=f"send_email_{request['id']}",
+        ):
+            result = send_results_available_email(request["email"], request["id"])
+            if result:
+                update_email_sent_status(request["id"])
+    with col6:
+        if st.button(f"View Details", key=f"details_{request['id']}",):
+            st.session_state["show_details"] = request["id"]
 
 
 def main():
@@ -92,15 +213,7 @@ def main():
 
     if requests:
         for request in requests:
-            col1, col2, col3 = st.columns([2, 1, 1])  # Adjust column ratios as needed
-            with col1:
-                st.write(request["id"])  # Display request ID
-            with col2:
-                st.link_button(url=f'/result?id={request["id"]}', label="View Results", icon=":material/analytics:", disabled=not request["results_exist"])
-
-            with col3:
-                if st.button(f"View Details - {request['id']}"):
-                    st.session_state["show_details"] = request['id']
+            display_request_row(request)
 
 
         if st.session_state.get("show_details", None): #Check if the details should be shown

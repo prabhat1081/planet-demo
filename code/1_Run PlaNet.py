@@ -1,38 +1,21 @@
 import streamlit as st
 
 import json
-from typing import Dict, Any, List
-import os
+from typing import Dict, Any
 
 from parse import parse
-import requests
-import zipfile
-import io
-import os
-import pandas as pd
-import subprocess
 import hashlib 
 import re
+import datetime
 
 from st_files_connection import FilesConnection
 
-import smtplib
-import os
 from google.cloud import secretmanager
 import uuid  # For generating request IDs
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
-
-from email.mime.text import MIMEText
-import base64
 import json
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Cc, Email
 from google.cloud import storage  # For GCS interaction
-
-
+from app.common import send_email, SENDER_EMAIL, SITE_URL
 
 try:
     # Initialize Secret Manager client
@@ -41,37 +24,7 @@ try:
 except:
     st.info("Secret agent not available")
 
-def access_secret_version(secret_name):
-    """Access the payload for the given secret version."""
 
-    name = f"projects/premium-state-449406-n8/secrets/{secret_name}/versions/latest" # Replace with your project ID
-    response = client.access_secret_version(name=name)
-    return response.payload.data.decode("UTF-8")
-
-SENDER_EMAIL = 'prabhat.agarwal@cs.stanford.edu'
-
-def send_email(recipient: str, subject: str, body: str):
-    try:
-        sendgrid_api_key = access_secret_version("sendgrid-api-key") # Get from Secret Manager
-        message = Mail(
-            from_email=Email(email=SENDER_EMAIL, name='PlaNet Team'),  # Your verified SendGrid sender
-            to_emails=recipient,
-            subject=subject,
-            html_content=body
-        )
-        message.cc = [
-            Cc('mbrbic@epfl.ch', 'Maria Brbic'),
-            Cc('myasu@cs.stanford.edu', 'Michi Yasunaga'),
-            Cc('prabhat.agarwal@cs.stanford.edu', 'Prabhat Agarwal')
-        ]
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        if response.status_code == 202:
-            st.success(f"Confirmation email sent to {recipient}. Please check your inbox!")
-        else: 
-            st.error(f"Error sending email: {response.body.decode('utf-8')}")
-    except Exception as e:
-        st.error(f"Error sending email: {e}")
 
 def get_trial_data(request_id):
     """Retrieves trial data from GCS given a request ID."""
@@ -95,7 +48,7 @@ def send_confirmation_email(recipient, request_id):  # Add task parameter
 
     <p>This email confirms that we have received your request. Your Request ID is: {request_id}.</p>
 
-    <p>You can view your request details here: <a href="https://tinyurl.com/planet-stanford/lookup?id={request_id}">https://tinyurl.com/planet-stanford/lookup?id={request_id}</a></p>
+    <p>You can view your request details here: <a href="{SITE_URL}/lookup?id={request_id}">{SITE_URL}/lookup?id={request_id}</a></p>
 
     <p>The system is now processing your data, and we anticipate having your results ready within 72 hours.</p>
 
@@ -518,7 +471,8 @@ def main():
 
                 data = {
                     "trial_data": st.session_state.trial_data,
-                    "email": recipient_email
+                    "email": recipient_email,
+                    "timestamp": datetime.datetime.now().isoformat()
                 }
 
                 with gcs_conn.open(f'planet-stanford/{request_id}.json', 'w') as f:
@@ -528,7 +482,7 @@ def main():
                     st.success(
                         f"""
                         Request saved successfully! Your Request ID is: {request_id}. Please keep this for your records. 
-                        You can view your request at https://planet-stanford-klfwgz3hta-ue.a.run.app/lookup?id={request_id}. 
+                        You can view your request at {SITE_URL}/lookup?id={request_id}. 
                         You should get an email with the results link in 72 hours.
                         """
                     )
