@@ -2,7 +2,7 @@ import streamlit as st
 
 
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Cc, Email
+from sendgrid.helpers.mail import Mail, Email, To
 from google.cloud import secretmanager
 
 try:
@@ -11,7 +11,7 @@ try:
 except:
     st.info("Secret agent not available")
 
-SITE_URL = 'https://go.epfl.ch/planet-stanford'
+SITE_URL = 'https://planet-stanford-klfwgz3hta-ue.a.run.app/'
 
 def layout_trial_data(trial_data):
     """Displays trial data in a structured format."""
@@ -80,24 +80,35 @@ def access_secret_version(secret_name):
 
 SENDER_EMAIL = 'prabhat.agarwal@cs.stanford.edu'
 
+ # Get from Secret Manager
+SENDGRID_API_KEY = access_secret_version("sendgrid-api-key")
+
 def send_email(recipient: str, subject: str, body: str) -> bool:
     try:
-        sendgrid_api_key = access_secret_version("sendgrid-api-key") # Get from Secret Manager
         message = Mail(
             from_email=Email(email=SENDER_EMAIL, name='PlaNet Team'),  # Your verified SendGrid sender
             to_emails=recipient,
             subject=subject,
             html_content=body
         )
-        message.cc = [
-            Cc('mbrbic@epfl.ch', 'Maria Brbic'),
-            Cc('myasu@cs.stanford.edu', 'Michi Yasunaga'),
-            Cc('prabhat.agarwal@cs.stanford.edu', 'Prabhat Agarwal')
-        ]
-        sg = SendGridAPIClient(sendgrid_api_key)
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
         if response.status_code == 202:
-            st.success(f"Confirmation email sent to {recipient}. Please check your inbox!")
+            st.success(f"A confirmation email has been sent to {recipient}. Kindly check your inbox for this message. " 
+                       "If it's not there, please check your spam or junk folder. "
+                       "Should you require further assistance, please contact us at prabhat.agarwal@cs.stanford.edu")
+            our_emails = [
+                To('mbrbic@epfl.ch', 'Maria Brbic'),
+                To('myasu@cs.stanford.edu', 'Michi Yasunaga'),
+                To('prabhat.agarwal@cs.stanford.edu', 'Prabhat Agarwal')
+            ]
+            message = Mail(
+                from_email=Email(email=SENDER_EMAIL, name='PlaNet Team'),  # Your verified SendGrid sender
+                to_emails=our_emails,
+                subject=subject,
+                html_content=body
+            )
+            sg.send(message)
             return True
         else: 
             st.error(f"Error sending email: {response.body.decode('utf-8')}")
