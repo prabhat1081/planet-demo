@@ -1,5 +1,4 @@
 import streamlit as st
-st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
 import json
 from google.cloud import storage
 
@@ -97,14 +96,12 @@ def main():
             with col1:
                 st.write(request["id"])  # Display request ID
             with col2:
-                if request["results_exist"]:
-                    st.success("Results Exist")
-                else:
-                    st.warning("Results Missing")
+                st.link_button(url=f'/result?id={request["id"]}', label="View Results", icon=":material/analytics:", disabled=not request["results_exist"])
 
             with col3:
                 if st.button(f"View Details - {request['id']}"):
                     st.session_state["show_details"] = request['id']
+
 
         if st.session_state.get("show_details", None): #Check if the details should be shown
             trial_data = download_request(st.session_state["show_details"]) #If they should be shown, download and display
@@ -138,5 +135,4 @@ def main():
             st.error("Invalid JSON in results data.")
 
 
-if __name__ == "__main__":
-    main()
+main()

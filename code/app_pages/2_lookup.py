@@ -1,5 +1,4 @@
 import streamlit as st
-st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
 import json
 from google.cloud import storage
 from app.common import layout_trial_data

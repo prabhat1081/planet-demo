@@ -1,6 +1,4 @@
 import streamlit as st
- # Set page configuration to wide layout
-st.set_page_config(layout="wide", page_title='PlaNet Demo', initial_sidebar_state="collapsed")
 
 import json
 from typing import Dict, Any, List
@@ -99,7 +97,7 @@ def send_confirmation_email(recipient, request_id):  # Add task parameter
 
     <p>You can view your request details here: <a href="https://tinyurl.com/planet-stanford/lookup?id={request_id}">https://tinyurl.com/planet-stanford/lookup?id={request_id}</a></p>
 
-    <p>Our team is now processing your data, and we anticipate having your results ready within 72 hours.</p>
+    <p>The system is now processing your data, and we anticipate having your results ready within 72 hours.</p>
 
     <p>You will receive a follow-up email with a link to our website where you can view your results.</p>
 
@@ -535,6 +533,4 @@ def main():
                         """
                     )
                     
-if __name__ == "__main__":
-   
-    main()
+main()
