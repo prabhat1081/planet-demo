@@ -23,7 +23,8 @@ def get_trial_data(request_id):
 def display_trial_data(request_id):
     trial_data = get_trial_data(request_id)
     if trial_data:
-        st.write("Trial Data Details:")
+        # st.write("Trial Data Details:")
+        st.markdown("<u>Input Trial Data Details:</u>", unsafe_allow_html=True) 
         layout_trial_data(trial_data)
     else:
         st.write(f"No data found for request ID: {request_id}")
@@ -50,24 +51,28 @@ def layout_result_data(result_data):
         return
 
     st.subheader("Adverse Events")
-    st.write(f"**Top 5 adverse events with the highest probability:**")
+    st.write(f"**Top 10 adverse events predicted with the highest probability for trial arm 1:**")
     aes = result_data["Top adverse events predicted for trial 1"]
-    for ae_name, score in aes.items():
+    for ae_name, score in list(aes.items())[:10]:
         st.write(f"**{ae_name}:** {score:0.3f}")
     
     st.subheader("Safety")
     score = result_data["Probability of safety concern for trial 1"]
-    st.write(f"**Probability of safety concern:** {score:0.3f}")
+    st.write(f"**Probability of safety concern of trial arm 1 compared to a placebo arm**: {score:0.3f}")
     
     st.subheader("Efficacy")
-    score = result_data["Probability of trial 1 being more effective than trial 2"]
-    st.write(f"**Probability of trial 1 being more effective than trial 2:** {score:0.3f}")
+    if "Probability of trial 1 being more effective than trial 2" in result_data:
+        score = result_data["Probability of trial 1 being more effective than trial 2"]
+        st.write(f"**Probability of trial arm 1 being more effective than trial arm 2 in terms of the provided primary outcome measure:** {score:0.3f}")
+    else:
+        st.write(f"Efficacy prediction was not run because only one trial arm was provided as input. Efficacy prediction requires a pair of trial arms (1 and 2) and predicts the probability of trial arm 1 being more effective than trial arm 2 in terms of the provided primary outcome measure.")
     
     
 def display_result_data(request_id):
     result_data = get_result_data(request_id)
     if result_data:
-        st.write("PlaNet Predictions:")
+        # st.write("PlaNet Predictions:")
+        st.markdown("<u>PlaNet Predictions:</u>", unsafe_allow_html=True) 
         layout_result_data(result_data)
     else:
         st.write(f"No data found for request ID: {request_id}")
@@ -77,11 +82,14 @@ st.title("Retrieve Results for Request ID")
 request_id_from_url = st.query_params.get("id", None) #Get id from query params
 
 if request_id_from_url: #If id is in url
-    display_trial_data(request_id_from_url)
     display_result_data(request_id_from_url)
+    st.divider() # make it clear that everything above this line is model prediction result, and below is original input provided by the user
+    display_trial_data(request_id_from_url)
 else: #If id is not in url
     request_id_input = st.text_input("Enter Request ID") #Allow user to input request id
     if request_id_input: #If user inputted request id
-        display_trial_data(request_id_input)
         display_result_data(request_id_input)
+        st.divider() # make it clear that everything above this line is model prediction result, and below is original input provided by the user
+        display_trial_data(request_id_input)
+        
 
