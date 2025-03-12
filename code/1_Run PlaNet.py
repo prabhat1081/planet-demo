@@ -199,10 +199,10 @@ def main():
         if st.button("Example 2 (NCT01713946)"):  # Replace with another NCT ID
             st.session_state.nct_id = "NCT01713946"
     with col3:
-        if st.button("Example 2 (NCT01584648)"):  # Replace with another NCT ID
+        if st.button("Example 3 (NCT01584648)"):  # Replace with another NCT ID
             st.session_state.nct_id = "NCT01584648"
     with col4:
-        if st.button("Example 2 (NCT01006252)"):  # Replace with another NCT ID
+        if st.button("Example 4 (NCT01006252)"):  # Replace with another NCT ID
             st.session_state.nct_id = "NCT01006252"
 
     col1, col2 = st.columns([3, 1])
