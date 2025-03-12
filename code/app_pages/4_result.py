@@ -51,14 +51,23 @@ def layout_result_data(result_data, trial_data):
     
     st.subheader("Safety")
     st.markdown("""
-<div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px;">
-This task predicts the overall probability of serious adverse events occurring in a clinical trial. 
-It uses data from placebo arms to estimate the baseline risk of serious adverse events for a given disease and population. 
-The prediction compares the observed rate of serious adverse events in a treatment arm to this estimated baseline to assess potential safety concerns. 
-A higher predicted score indicates a greater risk of serious adverse events associated with the treatment.
-For more details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank">paper</a>.
+<div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; border-left: 4px solid #4682B4; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: #2c5282; font-size: 18px;">Serious Adverse Event Prediction</h3>
+  <p>
+    This tool predicts the overall probability of serious adverse events occurring in a clinical trial by:
+  </p>
+  <ul style="margin-top: 8px; margin-bottom: 12px;">
+    <li>Using placebo arm data to establish the baseline risk of serious adverse events for the specific disease and population</li>
+    <li>Comparing the observed rate of serious adverse events in the treatment arm against this estimated baseline</li>
+    <li>Quantifying potential safety concerns associated with the treatment</li>
+  </ul>
+  <p>
+    <strong>Interpretation:</strong> A higher predicted score suggests an increased risk of serious adverse events associated with the treatment compared to placebo.
+  </p>
+  <p style="margin-top: 12px; font-size: 14px;">
+    For methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
+  </p>
 </div>
-<br>
 """, unsafe_allow_html=True)
     
     st.write(f"**Probability of serious adverse event occurrence**")
@@ -77,15 +86,23 @@ For more details, please refer to our <a href="https://www.medrxiv.org/content/1
 
     st.subheader("Adverse Events")
     st.markdown("""
-<div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px;">
-This task predicts the probability of a *specific category* of adverse events occurring in a clinical trial. 
-Similar to the safety prediction, it utilizes placebo arm data to estimate the expected frequency of that specific type of adverse event. 
-The prediction then compares the observed frequency of that event category in the treatment arm to the estimated baseline. 
-This analysis helps identify potential enrichment of particular types of adverse events due to the treatment. 
-A higher predicted score suggests an increased likelihood of that specific adverse event category.
-For more details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank">paper</a>.
+<div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; border-left: 4px solid #4682B4; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: #2c5282; font-size: 18px;">Specific Adverse Event Category Prediction</h3>
+  <p>
+    This tool predicts the probability of a <strong>specific category</strong> of adverse events occurring in a clinical trial. The analysis works by:
+  </p>
+  <ul style="margin-top: 8px; margin-bottom: 12px;">
+    <li>Utilizing placebo arm data to establish a baseline expectation for the frequency of the specific adverse event type</li>
+    <li>Comparing the observed frequency in the treatment arm against this estimated baseline</li>
+    <li>Identifying potential enrichment of particular adverse event categories attributable to the treatment</li>
+  </ul>
+  <p>
+    <strong>Interpretation:</strong> A higher predicted score indicates an increased likelihood that the specific adverse event category is associated with the treatment compared to placebo.
+  </p>
+  <p style="margin-top: 12px; font-size: 14px;">
+    For methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
+  </p>
 </div>
-<br>
 """, unsafe_allow_html=True)
 
     st.write(f"**Top 10 adverse events predicted with the highest scores**")
@@ -104,6 +121,22 @@ For more details, please refer to our <a href="https://www.medrxiv.org/content/1
                 st.write(f"{ae_name}: {score:0.3f}")
     
     st.subheader("Efficacy")
+    st.markdown("""
+<div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; border-left: 4px solid #4682B4; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: #2c5282; font-size: 18px;">Trial Arm Efficacy Prediction</h3>
+  <p>
+    This tool predicts which of two trial arms (testing different drugs) will demonstrate superior efficacy, using <strong>survival endpoint</strong> as the outcome measure. Results are presented as the probability that one trial arm will achieve higher survival rates than the other.
+  </p>
+  <p style="margin-bottom: 0;">
+    <strong>Important:</strong> PlaNet is specifically trained on survival endpoints and cannot make accurate predictions for other outcome metrics without model fine-tuning using relevant data for those metrics.
+  </p>
+  <p style="margin-top: 10px; font-size: 14px;">
+    For comprehensive methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
+  </p>
+</div>
+""", unsafe_allow_html=True)
+    """This task predicts which of the two trial arms that test different drugs will have better efficacy using survival endpoint as an outcome measure. The result presents the probability that one of the trial arms will result in higher survival endpoint.
+    Note: PlaNet is trained on the survival endpoint and it is unable to make predictions for other outcome metrics without fine-tuning the model on data for other outcome metrics."""
     if "efficacy" in result_data:
         score = result_data["efficacy"]["Probability of trial 1 being more effective than trial 2"]
     elif "Probability of trial 1 being more effective than trial 2" in result_data:
