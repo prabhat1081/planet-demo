@@ -191,13 +191,19 @@ def main():
     )
 
     # Example NCT ID Buttons
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if st.button("Example 1 (NCT01586975)"):  # Replace with your actual NCT ID
-            st.session_state.nct_id = "NCT01586975"
+        if st.button("Example 1 (NCT02702388)"):  # Replace with your actual NCT ID
+            st.session_state.nct_id = "NCT02702388"
     with col2:
-        if st.button("Example 2 (NCT05828836)"):  # Replace with another NCT ID
-            st.session_state.nct_id = "NCT05828836"
+        if st.button("Example 2 (NCT01713946)"):  # Replace with another NCT ID
+            st.session_state.nct_id = "NCT01713946"
+    with col3:
+        if st.button("Example 2 (NCT01584648)"):  # Replace with another NCT ID
+            st.session_state.nct_id = "NCT01584648"
+    with col4:
+        if st.button("Example 2 (NCT01006252)"):  # Replace with another NCT ID
+            st.session_state.nct_id = "NCT01006252"
 
     col1, col2 = st.columns([3, 1])
     with col1:
