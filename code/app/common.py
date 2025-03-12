@@ -11,7 +11,7 @@ try:
 except:
     st.info("Secret agent not available")
 
-SITE_URL = 'https://planet-stanford-klfwgz3hta-ue.a.run.app/'
+SITE_URL = 'https://planet-stanford-klfwgz3hta-ue.a.run.app'
 
 def layout_trial_data(trial_data):
     """Displays trial data in a structured format."""

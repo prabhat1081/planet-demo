@@ -7,7 +7,7 @@ import json
 from google.cloud import storage  # For GCS interaction
 from app.common import layout_trial_data
 
-from app.common import send_email, SENDER_EMAIL
+from app.common import send_email, SENDER_EMAIL, SITE_URL
 
 # Initialize GCS client
 storage_client = storage.Client()
@@ -25,7 +25,7 @@ def send_results_available_email(recipient: str, request_id: str) -> bool:
     Returns:
         bool: True if the email was sent successfully, False otherwise.
     """
-    results_link = f'https://go.epfl.ch/planet-stanford/result?id={request_id}'
+    results_link = f'{SITE_URL}/result?id={request_id}'
 
     email_subject = f"Subject: PlaNet - Results Available (Request ID: {request_id})"
     email_body = f"""
