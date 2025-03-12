@@ -55,13 +55,13 @@ def layout_result_data(result_data, trial_data):
     for i, arm in enumerate(trial_data["arm_group"]):
         with cols[i]:
             if "AE" in result_data:
-                aes = result_data["AE"][f"Top adverse events predicted for trial {i}"]
-            elif f"Top adverse events predicted for trial {i}" in result_data:
-                aes = result_data[f"Top adverse events predicted for trial {i}"]
+                aes = result_data["AE"][f"Top adverse events predicted for trial {i+1}"]
+            elif f"Top adverse events predicted for trial {i+1}" in result_data:
+                aes = result_data[f"Top adverse events predicted for trial {i+1}"]
             else:
                 break
             arm_label = arm["arm_group_label"]
-            st.write(f"Trial arm {i} ({arm_label}):")
+            st.write(f"Trial arm {i+1} ({arm_label}):")
             for ae_name, score in list(aes.items())[:10]:
                 st.write(f"{ae_name}: {score:0.3f}")
 
@@ -71,13 +71,13 @@ def layout_result_data(result_data, trial_data):
     for i, arm in enumerate(trial_data["arm_group"]):
         with cols[i]:
             if "safety" in result_data:
-                score = result_data["safety"][f"Probability of safety concern for trial {i}"]
-            elif f"Probability of safety concern for trial {i}" in result_data:
-                score = result_data[f"Probability of safety concern for trial {i}"]
+                score = result_data["safety"][f"Probability of safety concern for trial {i+1}"]
+            elif f"Probability of safety concern for trial {i+1}" in result_data:
+                score = result_data[f"Probability of safety concern for trial {i+1}"]
             else:
-                continue
+                break
             arm_label = arm["arm_group_label"]
-            st.write(f"Trial arm {i} ({arm_label}):")
+            st.write(f"Trial arm {i+1} ({arm_label}):")
             st.write(f"{score:0.3f}")
     
     st.subheader("Efficacy")
@@ -91,8 +91,12 @@ def layout_result_data(result_data, trial_data):
         arm1_label = trial_data["arm_group"][0]["arm_group_label"]
         arm2_label = trial_data["arm_group"][1]["arm_group_label"]
         outcome_measure = trial_data["primary_outcome"][0]["measure"]
-        st.write(f"**Probability of trial arm 1 ({arm1_label}) being more effective than trial arm 2 ({arm2_label}) in terms of the provided primary outcome measure ({outcome_measure}):**")
-        st.write(f"{score:0.3f}")
+        if arm1_label.lower() == "placebo":
+            st.write(f"**Probability of trial arm 2 ({arm2_label}) being more effective than trial arm 1 ({arm1_label}) in terms of the provided primary outcome measure ({outcome_measure}):**")
+            st.write(f"{1-score:0.3f}")
+        else:
+            st.write(f"**Probability of trial arm 1 ({arm1_label}) being more effective than trial arm 2 ({arm2_label}) in terms of the provided primary outcome measure ({outcome_measure}):**")
+            st.write(f"{score:0.3f}")
     else:
         st.write(f"Efficacy prediction was not run because only one trial arm was provided as input. Efficacy prediction requires a pair of trial arms (1 and 2) and predicts the probability of trial arm 1 being more effective than trial arm 2 in terms of the provided primary outcome measure.")
     
