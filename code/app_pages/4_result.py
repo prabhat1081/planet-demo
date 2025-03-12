@@ -67,7 +67,7 @@ def layout_result_data(result_data, trial_data):
   <p style="margin-top: 12px; font-size: 14px;">
     For methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
   </p>
-</div>
+</div><br>
 """, unsafe_allow_html=True)
     
     st.write(f"**Probability of serious adverse event occurrence**")
@@ -102,7 +102,7 @@ def layout_result_data(result_data, trial_data):
   <p style="margin-top: 12px; font-size: 14px;">
     For methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
   </p>
-</div>
+</div><br>
 """, unsafe_allow_html=True)
 
     st.write(f"**Top 10 adverse events predicted with the highest scores**")
@@ -134,9 +134,8 @@ def layout_result_data(result_data, trial_data):
     For comprehensive methodology and validation details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank" style="color: #4682B4; text-decoration: underline;">research paper</a>.
   </p>
 </div>
+<br>
 """, unsafe_allow_html=True)
-    """This task predicts which of the two trial arms that test different drugs will have better efficacy using survival endpoint as an outcome measure. The result presents the probability that one of the trial arms will result in higher survival endpoint.
-    Note: PlaNet is trained on the survival endpoint and it is unable to make predictions for other outcome metrics without fine-tuning the model on data for other outcome metrics."""
     if "efficacy" in result_data:
         score = result_data["efficacy"]["Probability of trial 1 being more effective than trial 2"]
     elif "Probability of trial 1 being more effective than trial 2" in result_data:
