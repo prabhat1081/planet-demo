@@ -19,42 +19,54 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set environment variables
-        run: |
-          echo "GCR_REPO=gcr.io/$PROJECT_ID" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "IMAGE_PLANET=$GCR_REPO/planet-demo:v1" >> $GITHUB_ENV
-          echo "IMAGE_PLANET_ADMIN=$GCR_REPO/planet-demo-admin:v1" >> $GITHUB_ENV
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.PROJECT_ID }}
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.PROJECT_ID }}
-          version: 'latest'
 
-      - name: Configure Docker authentication
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      - name: Set environment variables
+        run: |
+          echo "GCR_REPO=gcr.io/$PROJECT_ID" >> $GITHUB_ENV
+          echo "SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" >> $GITHUB_ENV
+
+      - name: Configure Docker authentication for GCR
+        run: gcloud auth configure-docker
 
       - name: Build and push Docker images
         run: |
-          docker build -t "${{ env.IMAGE_PLANET }}" -f docker/Dockerfile .
-          docker build --build-arg APP_MODE=admin -t "${{ env.IMAGE_PLANET_ADMIN }}" -f docker/Dockerfile .
-          docker push "${{ env.IMAGE_PLANET }}"
-          docker push "${{ env.IMAGE_PLANET_ADMIN }}"
+          # Set image variables in the step scope
+          IMAGE_PLANET="gcr.io/$PROJECT_ID/planet-demo:v1"
+          IMAGE_PLANET_ADMIN="gcr.io/$PROJECT_ID/planet-demo-admin:v1"
+          
+          # Build and push images
+          docker build -t "$IMAGE_PLANET" -f docker/Dockerfile .
+          docker build --build-arg APP_MODE=admin -t "$IMAGE_PLANET_ADMIN" -f docker/Dockerfile .
+          docker push "$IMAGE_PLANET"
+          docker push "$IMAGE_PLANET_ADMIN"
+          
+          # Save for next steps
+          echo "IMAGE_PLANET=$IMAGE_PLANET" >> $GITHUB_ENV
+          echo "IMAGE_PLANET_ADMIN=$IMAGE_PLANET_ADMIN" >> $GITHUB_ENV
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy planet-stanford \
-            --image="${{ env.IMAGE_PLANET }}" \
+            --image="${IMAGE_PLANET}" \
             --platform=managed \
-            --region="${{ env.REGION }}" \
+            --region="${REGION}" \
             --allow-unauthenticated \
-            --service-account="${{ env.SERVICE_ACCOUNT_EMAIL }}"
+            --service-account="${SERVICE_ACCOUNT_EMAIL}"
 
           gcloud run deploy planet-stanford-admin \
-            --image="${{ env.IMAGE_PLANET_ADMIN }}" \
+            --image="${IMAGE_PLANET_ADMIN}" \
             --platform=managed \
-            --region="${{ env.REGION }}" \
+            --region="${REGION}" \
             --allow-unauthenticated \
-            --service-account="${{ env.SERVICE_ACCOUNT_EMAIL }}"
+            --service-account="${SERVICE_ACCOUNT_EMAIL}"
