@@ -35,27 +35,42 @@ jobs:
         run: |
           echo "GCR_REPO=gcr.io/$PROJECT_ID" >> $GITHUB_ENV
           echo "SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" >> $GITHUB_ENV
+          echo "IMAGE_PLANET=gcr.io/$PROJECT_ID/planet-demo:v1" >> $GITHUB_ENV
+          echo "IMAGE_PLANET_ADMIN=gcr.io/$PROJECT_ID/planet-demo-admin:v1" >> $GITHUB_ENV
 
       - name: Configure Docker authentication for GCR
         run: gcloud auth configure-docker
 
-      - name: Build and push Docker images
-        run: |
-          # Set image variables in the step scope
-          IMAGE_PLANET="gcr.io/$PROJECT_ID/planet-demo:v1"
-          IMAGE_PLANET_ADMIN="gcr.io/$PROJECT_ID/planet-demo-admin:v1"
-          
-          # Build and push images
-          docker build -t "$IMAGE_PLANET" -f docker/Dockerfile .
-          docker build --build-arg APP_MODE=admin -t "$IMAGE_PLANET_ADMIN" -f docker/Dockerfile .
-          docker push "$IMAGE_PLANET"
-          docker push "$IMAGE_PLANET_ADMIN"
-          
-          # Save for next steps
-          echo "IMAGE_PLANET=$IMAGE_PLANET" >> $GITHUB_ENV
-          echo "IMAGE_PLANET_ADMIN=$IMAGE_PLANET_ADMIN" >> $GITHUB_ENV
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Deploy to Cloud Run
+      # Build and push regular image using GitHub cache
+      - name: Build and push regular image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PLANET }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push admin image using GitHub cache
+      - name: Build and push admin image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PLANET_ADMIN }}
+          build-args: |
+            APP_MODE=admin
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Deploy regular service to Cloud Run
+      - name: Deploy regular service to Cloud Run
         run: |
           gcloud run deploy planet-stanford \
             --image="${IMAGE_PLANET}" \
@@ -64,6 +79,9 @@ jobs:
             --allow-unauthenticated \
             --service-account="${SERVICE_ACCOUNT_EMAIL}"
 
+      # Deploy admin service to Cloud Run
+      - name: Deploy admin service to Cloud Run
+        run: |
           gcloud run deploy planet-stanford-admin \
             --image="${IMAGE_PLANET_ADMIN}" \
             --platform=managed \
