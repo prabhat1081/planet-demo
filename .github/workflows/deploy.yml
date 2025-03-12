@@ -1,0 +1,57 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # Or your main branch name
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      PROJECT_ID: "premium-state-449406-n8"
+      GCR_REPO: "gcr.io/${{ env.PROJECT_ID }}"
+      REGION: "us-east1"
+      SERVICE_ACCOUNT_NAME: "gh-cicd-agent"
+      SERVICE_ACCOUNT_EMAIL: "${{ env.SERVICE_ACCOUNT_NAME }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+      IMAGE_PLANET: "${{ env.GCR_REPO }}/planet-demo:v1"
+      IMAGE_PLANET_ADMIN: "${{ env.GCR_REPO }}/planet-demo-admin:v1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.PROJECT_ID }}
+          version: 'latest'
+
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and push Docker images
+        run: |
+          docker build -t "${{ env.IMAGE_PLANET }}" -f docker/Dockerfile .
+          docker build --build-arg APP_MODE=admin -t "${{ env.IMAGE_PLANET_ADMIN }}" -f docker/Dockerfile .
+          docker push "${{ env.IMAGE_PLANET }}"
+          docker push "${{ env.IMAGE_PLANET_ADMIN }}"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy planet-stanford \
+            --image="${{ env.IMAGE_PLANET }}" \
+            --platform=managed \
+            --region="${{ env.REGION }}" \
+            --allow-unauthenticated \
+            --service-account="${{ env.SERVICE_ACCOUNT_EMAIL }}"
+
+          gcloud run deploy planet-stanford-admin \
+            --image="${{ env.IMAGE_PLANET_ADMIN }}" \
+            --platform=managed \
+            --region="${{ env.REGION }}" \
+            --allow-unauthenticated \
+            --service-account="${{ env.SERVICE_ACCOUNT_EMAIL }}"

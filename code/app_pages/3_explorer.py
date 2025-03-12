@@ -80,7 +80,7 @@ def list_requests(filter_status=None, search_id=None):
 
             requests.append({"id": request_id, "results_exist": results_exist, "email": email, 
                              'results_emailed': email_sent, 'request_timestamp': request.get('timestamp', 'NA')})
-    return requests
+    return sorted(requests, key=lambda r: r['request_timestamp'], reverse=True)
 
 
 def download_request(request_id):
