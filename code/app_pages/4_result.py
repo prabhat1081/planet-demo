@@ -20,7 +20,7 @@ def get_trial_data(request_id):
         return None
 
 
-def display_trial_data(trial_data):
+def display_trial_data(trial_data, request_id):
     if trial_data:
         # st.write("Trial Data Details:")
         st.markdown("<u>Input Trial Data Details:</u>", unsafe_allow_html=True) 
@@ -97,11 +97,11 @@ def layout_result_data(result_data, trial_data):
         st.write(f"Efficacy prediction was not run because only one trial arm was provided as input. Efficacy prediction requires a pair of trial arms (1 and 2) and predicts the probability of trial arm 1 being more effective than trial arm 2 in terms of the provided primary outcome measure.")
     
     
-def display_result_data(result_data):
+def display_result_data(result_data, trial_data, request_id):
     if result_data:
         # st.write("PlaNet Predictions:")
         st.markdown("<u>PlaNet Predictions:</u>", unsafe_allow_html=True) 
-        layout_result_data(result_data)
+        layout_result_data(result_data, trial_data)
     else:
         st.write(f"No data found for request ID: {request_id}")
 
@@ -112,16 +112,16 @@ request_id_from_url = st.query_params.get("id", None) #Get id from query params
 if request_id_from_url: #If id is in url
     trial_data = get_trial_data(request_id_from_url)
     result_data = get_result_data(request_id_from_url)
-    display_result_data(result_data, trial_data)
+    display_result_data(result_data, trial_data, request_id_from_url)
     st.divider() # make it clear that everything above this line is model prediction result, and below is original input provided by the user
-    display_trial_data(trial_data)
+    display_trial_data(trial_data, request_id_from_url)
 else: #If id is not in url
     request_id_input = st.text_input("Enter Request ID") #Allow user to input request id
     if request_id_input: #If user inputted request id
         trial_data = get_trial_data(request_id_input)
         result_data = get_result_data(request_id_input)
-        display_result_data(result_data, trial_data)
+        display_result_data(result_data, trial_data, request_id_input)
         st.divider() # make it clear that everything above this line is model prediction result, and below is original input provided by the user
-        display_trial_data(trial_data)
+        display_trial_data(trial_data, request_id_input)
         
 
