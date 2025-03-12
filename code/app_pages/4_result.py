@@ -61,7 +61,7 @@ def layout_result_data(result_data, trial_data):
             else:
                 break
             arm_label = arm["arm_group_label"]
-            st.write(f"Trial arm {i+1} ({arm_label}):")
+            st.write(f"**Trial arm {i+1} ({arm_label})**:")
             for ae_name, score in list(aes.items())[:10]:
                 st.write(f"{ae_name}: {score:0.3f}")
 
@@ -77,7 +77,7 @@ def layout_result_data(result_data, trial_data):
             else:
                 break
             arm_label = arm["arm_group_label"]
-            st.write(f"Trial arm {i+1} ({arm_label}):")
+            st.write(f"**Trial arm {i+1} ({arm_label})**:")
             st.write(f"{score:0.3f}")
     
     st.subheader("Efficacy")
