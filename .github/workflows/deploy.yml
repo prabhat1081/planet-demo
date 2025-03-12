@@ -5,23 +5,26 @@ on:
     branches:
       - main  # Or your main branch name
 
+env:
+  PROJECT_ID: "premium-state-449406-n8"
+  REGION: "us-east1"
+  SERVICE_ACCOUNT_NAME: "gh-cicd-agent"
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     environment: production
 
-    env:
-      PROJECT_ID: "premium-state-449406-n8"
-      GCR_REPO: "gcr.io/${{ env.PROJECT_ID }}"
-      REGION: "us-east1"
-      SERVICE_ACCOUNT_NAME: "gh-cicd-agent"
-      SERVICE_ACCOUNT_EMAIL: "${{ env.SERVICE_ACCOUNT_NAME }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
-      IMAGE_PLANET: "${{ env.GCR_REPO }}/planet-demo:v1"
-      IMAGE_PLANET_ADMIN: "${{ env.GCR_REPO }}/planet-demo-admin:v1"
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          echo "GCR_REPO=gcr.io/$PROJECT_ID" >> $GITHUB_ENV
+          echo "SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" >> $GITHUB_ENV
+          echo "IMAGE_PLANET=$GCR_REPO/planet-demo:v1" >> $GITHUB_ENV
+          echo "IMAGE_PLANET_ADMIN=$GCR_REPO/planet-demo-admin:v1" >> $GITHUB_ENV
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
