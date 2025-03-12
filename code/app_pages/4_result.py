@@ -48,24 +48,19 @@ def layout_result_data(result_data, trial_data):
 
     if result_data is None:
         return
-
-    st.subheader("Adverse Events")
-    st.write(f"**Top 10 adverse events predicted with the highest probabilities**")
-    cols = st.columns(len(trial_data["arm_group"]))
-    for i, arm in enumerate(trial_data["arm_group"]):
-        with cols[i]:
-            if "AE" in result_data:
-                aes = result_data["AE"][f"Top adverse events predicted for trial {i+1}"]
-            elif f"Top adverse events predicted for trial {i+1}" in result_data:
-                aes = result_data[f"Top adverse events predicted for trial {i+1}"]
-            else:
-                break
-            arm_label = arm["arm_group_label"]
-            st.write(f"Trial arm {i+1} ({arm_label}):")
-            for ae_name, score in list(aes.items())[:10]:
-                st.write(f"{ae_name}: {score:0.3f}")
-
+    
     st.subheader("Safety")
+    st.markdown("""
+<div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px;">
+This task predicts the overall probability of serious adverse events occurring in a clinical trial. 
+It uses data from placebo arms to estimate the baseline risk of serious adverse events for a given disease and population. 
+The prediction compares the observed rate of serious adverse events in a treatment arm to this estimated baseline to assess potential safety concerns. 
+A higher predicted score indicates a greater risk of serious adverse events associated with the treatment.
+For more details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank">paper</a>.
+</div>
+<br>
+""", unsafe_allow_html=True)
+    
     st.write(f"**Probability of serious adverse event occurrence**")
     cols = st.columns(len(trial_data["arm_group"]))
     for i, arm in enumerate(trial_data["arm_group"]):
@@ -79,6 +74,34 @@ def layout_result_data(result_data, trial_data):
             arm_label = arm["arm_group_label"]
             st.write(f"Trial arm {i+1} ({arm_label}):")
             st.write(f"{score:0.3f}")
+
+    st.subheader("Adverse Events")
+    st.markdown("""
+<div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px;">
+This task predicts the probability of a *specific category* of adverse events occurring in a clinical trial. 
+Similar to the safety prediction, it utilizes placebo arm data to estimate the expected frequency of that specific type of adverse event. 
+The prediction then compares the observed frequency of that event category in the treatment arm to the estimated baseline. 
+This analysis helps identify potential enrichment of particular types of adverse events due to the treatment. 
+A higher predicted score suggests an increased likelihood of that specific adverse event category.
+For more details, please refer to our <a href="https://www.medrxiv.org/content/10.1101/2024.03.06.24303800v2" target="_blank">paper</a>.
+</div>
+<br>
+""", unsafe_allow_html=True)
+
+    st.write(f"**Top 10 adverse events predicted with the highest scores**")
+    cols = st.columns(len(trial_data["arm_group"]))
+    for i, arm in enumerate(trial_data["arm_group"]):
+        with cols[i]:
+            if "AE" in result_data:
+                aes = result_data["AE"][f"Top adverse events predicted for trial {i+1}"]
+            elif f"Top adverse events predicted for trial {i+1}" in result_data:
+                aes = result_data[f"Top adverse events predicted for trial {i+1}"]
+            else:
+                break
+            arm_label = arm["arm_group_label"]
+            st.write(f"Trial arm {i+1} ({arm_label}):")
+            for ae_name, score in list(aes.items())[:10]:
+                st.write(f"{ae_name}: {score:0.3f}")
     
     st.subheader("Efficacy")
     if "efficacy" in result_data:
