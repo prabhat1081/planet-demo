@@ -81,6 +81,8 @@ def layout_result_data(result_data, trial_data):
             else:
                 break
             arm_label = arm["arm_group_label"]
+            if 'placebo' in arm_label.lower():
+                continue
             st.write(f"Trial arm {i+1} ({arm_label}):")
             st.write(f"{score:0.3f}")
 
@@ -116,6 +118,8 @@ def layout_result_data(result_data, trial_data):
             else:
                 break
             arm_label = arm["arm_group_label"]
+            if 'placebo' in arm_label.lower():
+                continue
             st.write(f"Trial arm {i+1} ({arm_label}):")
             for ae_name, score in list(aes.items())[:10]:
                 st.write(f"{ae_name}: {score:0.3f}")
@@ -142,20 +146,21 @@ def layout_result_data(result_data, trial_data):
         score = result_data["Probability of trial 1 being more effective than trial 2"]
     else:
         score = None 
-    if score:
-        arm1_label = trial_data["arm_group"][0]["arm_group_label"]
-        arm2_label = trial_data["arm_group"][1]["arm_group_label"]
-        outcome_measure = trial_data["primary_outcome"][0]["measure"]
-        if arm1_label.lower() == "placebo":
-            st.write(f"**Probability of trial arm 2 ({arm2_label}) being more effective than trial arm 1 ({arm1_label}) in terms of the provided primary outcome measure ({outcome_measure}):**")
-            st.write(f"{1-score:0.3f}")
-        else:
-            st.write(f"**Probability of trial arm 1 ({arm1_label}) being more effective than trial arm 2 ({arm2_label}) in terms of the provided primary outcome measure ({outcome_measure}):**")
-            st.write(f"{score:0.3f}")
-    else:
+    arm_labels = [arm["arm_group_label"] for arm in trial_data["arm_group"]]
+    exists_placebo = any([("placebo" in name.lower()) for name in arm_labels])
+    survival_outcome_measures = [o["measure"] for o in trial_data["primary_outcome"] if "survival" in o["measure"]]
+    if score is None:
         st.write(f"Efficacy prediction was not run because only one trial arm was provided as input. Efficacy prediction requires a pair of trial arms (1 and 2) and predicts the probability of trial arm 1 being more effective than trial arm 2 in terms of the provided primary outcome measure.")
-    
-    
+    elif len(survival_outcome_measures) == 0:
+        st.write(f"PlaNet is trained on the survival endpoint and it is unable to make predictions for other outcome metrics without further fine-tuning of the model on data for other outcome metrics.")
+    elif exists_placebo:
+        st.write('The efficacy ask is defined for the two trial arms testing different drugs (not placebo), which is not the data provided by the user.')
+    else:
+        arm1_label = arm_labels[0]
+        arm2_label = arm_labels[1]
+        st.write(f"**Probability of trial arm 1 ({arm1_label}) being more effective than trial arm 2 ({arm2_label}) in terms of the provided primary outcome measure ({survival_outcome_measures[0]}):**")
+        st.write(f"{score:0.3f}")
+
 def display_result_data(result_data, trial_data, request_id):
     if result_data:
         # st.write("PlaNet Predictions:")
